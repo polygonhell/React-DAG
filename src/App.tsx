@@ -1,24 +1,46 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import { Graph, Elements } from './graph/Graph';
+
+
+
+const initialElements: Elements = {
+  nodes: [
+    {
+      id:"1",
+      position:[100,100],
+      data: {
+        label:"Test 1"
+      }
+    }, {
+      id:"2",
+      position:[200,100],
+      data: {
+        label:"Testing 2"
+      }
+    }, {
+      id:"3",
+      position:[300,100],
+      data: {
+        label:"Test 3"
+      }
+    }, {
+      id:"4",
+      position:[100,200],
+      data: {
+        label:"Test 4"
+      }
+    }
+  ],
+  edges: [],
+}
 
 function App() {
+  const graphRef = useRef()
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Graph elements={initialElements} ref={graphRef}/>
     </div>
   );
 }
