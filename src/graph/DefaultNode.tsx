@@ -1,7 +1,5 @@
-import React, { forwardRef, ForwardRefExoticComponent, HTMLAttributes, useImperativeHandle, useState, useRef, memo, MouseEventHandler } from "react"
-import { GraphEdge, GraphNode, INode, NodeProperties } from "./types"
-import { getTextSize } from "./Utilities"
-import { makeStyles } from '@material-ui/core/styles'
+import { memo } from "react"
+import { NodeProperties } from "./types"
 import { Handle } from "./Handle"
 
 

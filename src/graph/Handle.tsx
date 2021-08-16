@@ -25,11 +25,11 @@ export const Handle = ({id, style} : HandleProps) : JSX.Element => {
 
   useEffect(() => {
     context.registerHandle(id)
-  }, [])
+  }, [id, context])
 
   useEffect(() => {
     console.log(`??? = ${JSON.stringify(contentsRef.current?.getClientRects())}`)
-  }, [contentsRef.current])
+  }, [])
   
   return <div style={{ display: "inline-block", position: style?.position, left: style?.left, top: style?.top, right:style?.right, bottom:style?.bottom }} ref={contentsRef} onMouseDown={onmousedown}>
     {defaultContents}

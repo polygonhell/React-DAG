@@ -1,8 +1,5 @@
-import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, useRef, createRef } from "react"
-import ReactDOM from "react-dom"
-import Draggable from "react-draggable"
+import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, MouseEventHandler } from "react"
 import { DefaultNode } from "./DefaultNode"
-import { Handle } from "./Handle"
 import { NodeWrapper } from "./NodeWrapper"
 import "./types"
 import { GraphEdge, GraphNode, INode, NodeJSX } from "./types"
@@ -21,86 +18,54 @@ interface GraphProps extends HTMLAttributes<HTMLElement> {
   elements: Elements
 }
 
-
-
-const defaultNodeType : Record<string, NodeJSX<any>> = {
+const defaultNodeType: Record<string, NodeJSX<any>> = {
   default: DefaultNode
 }
 
-enum UpdateType {
-  None,
-  Dragging,
-}
-
-interface UpdateState {
-  type: UpdateType,
-  origPos:[number, number],
-  setPos(i: [number, number]) : void
-}
-
-
 export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => {
   const nodeTypes = defaultNodeType
-  const [nodes, setNodes] = useState<INode[]>([])
-  const svgRef = useRef<SVGSVGElement>(null)
-
-  let updateState : UpdateState | undefined = undefined
+  const [nodes, setNodes] = useState<Map<string, INode>>(new Map())
 
 
-  function dragOnMove(this: GlobalEventHandlers, e: MouseEvent) : void {
-    if (updateState && svgRef.current) {
-      const cToS = svgRef.current.getScreenCTM()?.inverse() || undefined
-      let point = svgRef.current.createSVGPoint(); point.x = e.clientX; point.y = e.clientY
-      const clientPos = point.matrixTransform(cToS)
-
-      updateState.setPos([updateState.origPos[0] + clientPos.x, updateState.origPos[1] + clientPos.y])
-    }
-  }
-  function dragEndMove(this: GlobalEventHandlers, e: MouseEvent) : void {
-    console.log("Drag End")
-    updateState = undefined
-    if (svgRef.current) {
-      svgRef.current.onmousemove = null
-      svgRef.current.onmouseup = null
-      svgRef.current.onmouseleave = null
-    }
-  }
-
-  function onStartDrag(origPos: [number, number], setPos:(f:[number, number]) => void): void {
-    const type = updateState?.type || UpdateType.None
-    if (type != UpdateType.None) {
-      console.log(`Attempting to start drag when ${JSON.stringify(type)}`)
-      return
-    }
-    if (svgRef.current) {
-      updateState = {origPos, setPos, type: UpdateType.Dragging}
-      svgRef.current.onmousemove = dragOnMove
-      svgRef.current.onmouseup = dragEndMove
-      svgRef.current.onmouseleave = dragEndMove
-    }
-  }
- 
 
   useEffect(() => {
-    const ns = elements.nodes.map ( n => new INode(nodeTypes, n) )
-    setNodes(ns)
-  }, [])
+    const ns : [string, INode][]= elements.nodes.map(n => [n.id, new INode(nodeTypes, n)])
+    setNodes(new Map(ns))
+  }, [elements.nodes, nodeTypes])
 
   useImperativeHandle(ref, () => ({
     getAlert() {
-      alert("getAlert from Child");
+      alert("getAlert from Child")
     }
-  }));
+  }))
+
+
+  function onNodeMove(id: string, pos:[number, number]) {
+    // console.log(`Node ${id} moved to ${JSON.stringify(pos)}`)
+    // Update the node position in the map - Note don't trigger render
+    const existing = nodes.get(id)
+    if (existing) {
+      existing.position = pos
+    }
+    // Inform the Edges they need to be updated
+  }
+
+  const onMouseDown : MouseEventHandler = e => { }
+  const onMouseMove : MouseEventHandler = e => { }
+  const onMouseUp : MouseEventHandler = e => { }
+  const onMouseLeave : MouseEventHandler = e => { onMouseUp(e) }
+
 
 
   const scale = 1.0
 
   return (
     <>
-      <div style={{transformOrigin: "0 0", transform: `scale(${scale})`, width: 600, height: 600, backgroundColor: "blue"}}>
-        { nodes.map(n => 
-          <NodeWrapper id={n.id} scale={scale} pos={n.position}>
-            { React.createElement(n.type, {data: n.data}) }
+      <div style={{ transformOrigin: "0 0", transform: `scale(${scale})`, width: 600, height: 600, backgroundColor: "blue" }} 
+           onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}>
+        {Array.from(nodes).map(([_, n]) =>
+          <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
+            {React.createElement(n.type, { data: n.data })}
           </NodeWrapper>)
         }
       </div>

@@ -22,7 +22,7 @@ export class INode<T = {}> {
     this.typeName = n.type
     this.type = nodeTypes[n.type || "default"]
     this.position = n.position
-    this.refObject = createRef<Element>()
+    // this.refObject = createRef<Element>()
   }
 
   id: string
@@ -30,7 +30,8 @@ export class INode<T = {}> {
   typeName?: String
   type: NodeJSX<any>
   position: [number, number]
-  refObject: React.RefObject<Element>
+  refObject: React.RefObject<Element> = createRef<Element>()
+  edges: string[] = []
 }
 
 

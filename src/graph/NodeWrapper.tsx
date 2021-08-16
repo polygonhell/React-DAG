@@ -1,8 +1,6 @@
-import { forwardRef, ReactNode, createContext } from "react"
-import Draggable from "react-draggable"
+import { forwardRef, ReactNode, useImperativeHandle } from "react"
+import Draggable, { DraggableEventHandler } from "react-draggable"
 import { nodeContext } from "./contexts"
-import { Handle } from "./Handle"
-import { NodeContext } from "./contexts"
 
 
 
@@ -11,17 +9,28 @@ interface NodeWrapperProperties {
   scale: number
   pos: [number, number]
   children?: ReactNode
+  onMove: (id: string, pos:[number, number]) => void
 }
 
-interface HookDetails {
+interface NodeWrapperState {
   id: string
+  pos: [number, number]
+
 }
 
 
 
-
-export const NodeWrapper = forwardRef(({id, pos, scale, children} : NodeWrapperProperties, ref) : JSX.Element => {
+export const NodeWrapper = forwardRef(({id, pos, scale, children, onMove} : NodeWrapperProperties, ref) : JSX.Element => {
   let handles : string[] = []
+  const originalPos = pos
+  let currentPos = originalPos
+
+  useImperativeHandle(ref, () => ({
+    getState() : NodeWrapperState { return {id, pos: currentPos || pos} },
+    getAlert() {
+      alert("getAlert from NodeWrapper")
+    }
+  }))
 
   function registerHandle(str: string) {
     handles.push(`${id}+${str}`)
@@ -29,13 +38,16 @@ export const NodeWrapper = forwardRef(({id, pos, scale, children} : NodeWrapperP
   }
 
   function onMouseDownHandle(handleId: string) {
-    
     console.log(`MouseDownHandle ${handleId} with Node ${id}`)
-
-
   }
 
-  return <Draggable scale={scale}>
+  const onDrag : DraggableEventHandler = (e, data) => {
+    currentPos = [data.x + originalPos[0], data.y + originalPos[1]]
+    onMove(id, currentPos)
+  }
+
+
+  return <Draggable scale={scale} onDrag={onDrag}>
     <div style={{position: "absolute", left: pos[0], top: pos[1], display: "inline-block"}}>
       <nodeContext.Provider value={{registerHandle, onMouseDownHandle}}>
         {children}

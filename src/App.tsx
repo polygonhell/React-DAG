@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-import logo from './logo.svg';
+import { useRef } from 'react';
 import './App.css';
 import { Graph, Elements } from './graph/Graph';
 
