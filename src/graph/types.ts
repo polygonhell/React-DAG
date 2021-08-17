@@ -20,6 +20,9 @@ export interface HandleRef {
   handle: string
 }
 
+export interface EdgeRef {
+  updatePath(path: [number, number][]): void
+}
 export class IEdge<T = any> {
   constructor(n: GraphEdge<T>) {
     this.id = n.id
@@ -34,9 +37,13 @@ export class IEdge<T = any> {
   typeName?: String
   from: HandleRef
   to: HandleRef
-  refObject: React.RefObject<Element> = createRef<Element>()
+  refObject: React.RefObject<EdgeRef> = createRef<EdgeRef>()
 }
 
+
+export interface NodeRef {
+  getHandlePos(id: string) : [number, number]
+}
 export class INode<T = any> {
   constructor(nodeTypes: Record<string, NodeJSX<any>>, n: GraphNode<T>) {
     this.id = n.id
@@ -51,7 +58,7 @@ export class INode<T = any> {
   typeName?: String
   type: NodeJSX<any>
   position: [number, number]
-  refObject: React.RefObject<Element> = createRef<Element>()
+  refObject: React.RefObject<NodeRef> = createRef<NodeRef>()
   edges: string[] = []
 }
 
