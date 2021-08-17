@@ -38,7 +38,7 @@ export const NodeWrapper = forwardRef(({id, pos, scale, children, onMove} : Node
 
   function registerHandle(handleId: string, ref: React.RefObject<HTMLDivElement>) {
     handles.push({id: handleId, ref})
-    console.log(`+ Registering Handle ${handleId} with Node ${id} handles=${JSON.stringify(handles)}`)
+    // console.log(`+ Registering Handle ${handleId} with Node ${id} handles=${JSON.stringify(handles)}`)
   }
 
   function onMouseDownHandle(handleId: string) {

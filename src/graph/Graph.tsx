@@ -28,7 +28,7 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
   // TODO might need an ordered Map
   const [nodes] = useState<Map<string, INode>>(new Map())
   const [edges] = useState<Map<string, IEdge>>(new Map())
-  const [_, setRender] = useState<number>(0) // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [, setRender] = useState<number>(0)
 
   const forceRender = useCallback(() : void => {
     setRender(r => r+1)
