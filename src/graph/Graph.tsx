@@ -79,7 +79,7 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
 
 
 
-  const scale = 1.0
+  const scale = 2.0
 
   return (
     <>
@@ -90,6 +90,12 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
             {React.createElement(n.type, { data: n.data })}
           </NodeWrapper>)
         }
+
+        <svg width={600} height={600} style={{position: "absolute", left: 0, top: 0, pointerEvents: "none"}}>
+          <text x={100} y={100} color="red">
+            Foo Bar Baz
+          </text>
+        </svg>
       </div>
     </>
   )
