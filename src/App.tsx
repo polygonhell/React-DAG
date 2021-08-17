@@ -38,6 +38,21 @@ const initialElements: Elements = {
       from: {node: "1", handle: "output"},
       to: {node: "2", handle: "input"}
     },
+    {
+      id: "1to3",
+      from: {node: "1", handle: "output"},
+      to: {node: "3", handle: "input"}
+    },
+    {
+      id: "3to4",
+      from: {node: "3", handle: "output"},
+      to: {node: "4", handle: "input"}
+    },
+    {
+      id: "2to4",
+      from: {node: "2", handle: "output"},
+      to: {node: "4", handle: "input"}
+    },
 
   ],
 }
