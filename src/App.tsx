@@ -32,7 +32,14 @@ const initialElements: Elements = {
       }
     }
   ],
-  edges: [],
+  edges: [
+    {
+      id: "1to2",
+      from: {node: "1", handle: "output"},
+      to: {node: "2", handle: "input"}
+    },
+
+  ],
 }
 
 function App() {

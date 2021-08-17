@@ -16,7 +16,7 @@ export const Handle = ({id, style} : HandleProps) : JSX.Element => {
   const context = useContext(nodeContext)
   const contentsRef = useRef<HTMLDivElement>(null)
 
-  const onmousedown : MouseEventHandler<HTMLDivElement> = e => {
+  const onMouseDown : MouseEventHandler<HTMLDivElement> = e => {
     e.stopPropagation();
     context.onMouseDownHandle(id)
   }
@@ -24,14 +24,16 @@ export const Handle = ({id, style} : HandleProps) : JSX.Element => {
   
 
   useEffect(() => {
-    context.registerHandle(id)
+    context.registerHandle(id, contentsRef)
   }, [id, context])
 
   useEffect(() => {
     console.log(`??? = ${JSON.stringify(contentsRef.current?.getClientRects())}`)
   }, [])
   
-  return <div style={{ display: "inline-block", position: style?.position, left: style?.left, top: style?.top, right:style?.right, bottom:style?.bottom }} ref={contentsRef} onMouseDown={onmousedown}>
+  return <div style={{ display: "inline-block", position: style?.position, left: style?.left, top: style?.top, right:style?.right, bottom:style?.bottom }} 
+              ref={contentsRef}
+              onMouseDown={onMouseDown}>
     {defaultContents}
   </div>
 }

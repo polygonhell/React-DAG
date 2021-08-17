@@ -1,4 +1,4 @@
-import { forwardRef, ReactNode, useImperativeHandle } from "react"
+import React, { forwardRef, ReactNode, useImperativeHandle } from "react"
 import Draggable, { DraggableEventHandler } from "react-draggable"
 import { nodeContext } from "./contexts"
 
@@ -18,23 +18,27 @@ interface NodeWrapperState {
 
 }
 
-
+interface Handle {
+  id: string,
+  ref: React.RefObject<HTMLDivElement>
+}
 
 export const NodeWrapper = forwardRef(({id, pos, scale, children, onMove} : NodeWrapperProperties, ref) : JSX.Element => {
-  let handles : string[] = []
+  let handles : Handle[] = []
   const originalPos = pos
   let currentPos = originalPos
 
   useImperativeHandle(ref, () => ({
     getState() : NodeWrapperState { return {id, pos: currentPos || pos} },
+    getHandlePos(id: string) : [number, number] { return currentPos },
     getAlert() {
       alert("getAlert from NodeWrapper")
     }
   }))
 
-  function registerHandle(str: string) {
-    handles.push(`${id}+${str}`)
-    console.log(`+ Registering Handle ${str} with Node ${id} handles=${JSON.stringify(handles)}`)
+  function registerHandle(handleId: string, ref: React.RefObject<HTMLDivElement>) {
+    handles.push({id: handleId, ref})
+    console.log(`+ Registering Handle ${handleId} with Node ${id} handles=${JSON.stringify(handles)}`)
   }
 
   function onMouseDownHandle(handleId: string) {

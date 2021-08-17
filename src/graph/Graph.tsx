@@ -1,8 +1,9 @@
 import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, MouseEventHandler } from "react"
+import { useCallback } from "react"
 import { DefaultNode } from "./DefaultNode"
 import { NodeWrapper } from "./NodeWrapper"
 import "./types"
-import { GraphEdge, GraphNode, INode, NodeJSX } from "./types"
+import { GraphEdge, GraphNode, IEdge, INode, NodeJSX } from "./types"
 
 
 
@@ -24,16 +25,37 @@ const defaultNodeType: Record<string, NodeJSX<any>> = {
 
 export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => {
   const nodeTypes = defaultNodeType
-  const [nodes, setNodes] = useState<Map<string, INode>>(new Map())
+  // TODO might need an ordered Map
+  const [nodes] = useState<Map<string, INode>>(new Map())
+  const [edges] = useState<Map<string, IEdge>>(new Map())
+  const [_, setRender] = useState<number>(0) // eslint-disable-line @typescript-eslint/no-unused-vars
 
+  const forceRender = useCallback(() : void => {
+    setRender(r => r+1)
+  },[])
 
+  const addNode = useCallback((node: GraphNode) : void => {
+    nodes.set(node.id, new INode(nodeTypes, node))
+    forceRender()
+  }, [forceRender, nodes, nodeTypes])
+
+  const addEdge = useCallback((edge: GraphEdge) : void => {
+    edges.set(edge.id, new IEdge(edge))
+    const fromNode = nodes.get(edge.from.node)
+    fromNode?.edges.push(edge.id)
+    const toNode = nodes.get(edge.from.node)
+    toNode?.edges.push(edge.id)
+    forceRender()
+  }, [forceRender, edges, nodes])
 
   useEffect(() => {
-    const ns : [string, INode][]= elements.nodes.map(n => [n.id, new INode(nodeTypes, n)])
-    setNodes(new Map(ns))
-  }, [elements.nodes, nodeTypes])
+    elements.nodes.forEach( n => addNode(n) )
+    elements.edges.forEach( e => addEdge(e) )
+  }, [elements, addEdge, addNode])
 
   useImperativeHandle(ref, () => ({
+    addEdge,
+    addNode,
     getAlert() {
       alert("getAlert from Child")
     }

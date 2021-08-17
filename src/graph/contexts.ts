@@ -2,7 +2,7 @@ import { createContext } from "react"
 
 
 export interface NodeContext {
-  registerHandle(str: string): void
+  registerHandle(id: string, ref: React.RefObject<HTMLDivElement>): void
   onMouseDownHandle(handleId: string): void
 }
 
