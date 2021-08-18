@@ -133,9 +133,9 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
 
   return (
     <>
-      <div className="outerDiv" style={{ width: 600, height: 600, overflow: "clip", backgroundColor:"#e0e0e0" }}
+      <div className="outerDiv" style={{ width: 600, height: 600 }}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}>
-        <div ref={innerRef} style={{ transform: transformString(), width: "100%", height: "100%"}}>
+        <div ref={innerRef} className="innerDiv" style={{ transform: transformString() }}>
           {nodeArray.map(([_, n]) =>
             <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
               {React.createElement(n.type, { data: n.data })}
