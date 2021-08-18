@@ -1,4 +1,4 @@
-import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, useRef, MouseEventHandler, WheelEventHandler } from "react"
+import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, useRef, MouseEventHandler, WheelEventHandler, memo } from "react"
 import { useCallback } from "react"
 import { DefaultNode } from "./DefaultNode"
 import { NodeWrapper } from "./NodeWrapper"
@@ -31,7 +31,8 @@ const defaultEdgeType: Record<string, EdgeJSX<any>> = {
   default: StraightEdge
 }
 
-export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.Element => {
+export const Graph = memo(forwardRef(({ elements, position }: GraphProps, ref): JSX.Element => {
+
   const nodeTypes = defaultNodeType
   const edgeTypes = defaultEdgeType
   // TODO might need an ordered Map
@@ -66,6 +67,8 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
   useEffect(() => {
     elements.nodes.forEach(n => addNode(n))
     elements.edges.forEach(e => addEdge(e))
+    // if we repopulate, the nodes have not been rendered
+    setNodesRendered(false)
   }, [elements, addEdge, addNode])
 
   const nodeArray = Array.from(nodes)
@@ -178,4 +181,4 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
       </div>
     </>
   )
-})
+}))
