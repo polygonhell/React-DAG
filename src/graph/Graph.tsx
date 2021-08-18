@@ -47,14 +47,12 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
   let scale = 1.5
 
 
-  const forceRender = useCallback((): void => {
-    setRender(r => r + 1)
-  }, [])
+  function forceRender() { setRender(r => r + 1) }
 
   const addNode = useCallback((node: GraphNode): void => {
     nodes.set(node.id, new INode(nodeTypes, node))
     forceRender()
-  }, [forceRender, nodes, nodeTypes])
+  }, [nodes, nodeTypes])
 
   const addEdge = useCallback((edge: GraphEdge): void => {
     edges.set(edge.id, new IEdge(edgeTypes, edge))
@@ -63,7 +61,7 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
     const toNode = nodes.get(edge.to.node)
     toNode?.edges.push(edge.id)
     forceRender()
-  }, [forceRender, edges, nodes])
+  }, [edges, nodes, edgeTypes])
 
   useEffect(() => {
     elements.nodes.forEach(n => addNode(n))

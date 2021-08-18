@@ -1,18 +1,11 @@
-import React, { ComponentType, forwardRef, ReactNode, useImperativeHandle, useState } from "react"
-import { EdgeJSX, NodeJSX } from "./types"
+import React, { forwardRef, useImperativeHandle, useState } from "react"
+import { EdgeJSX } from "./types"
 
 interface EdgeProps {
   path: [number, number][]
   edgeClass: EdgeJSX<any>
 }
 
-function toPathString(path: [number, number][]): string {
-  let out = `M ${path[0][0]} ${path[0][1]}`
-  path.slice(1).forEach(point => {
-    out = out + ` L ${point[0]} ${point[1]}`
-  })
-  return out
-}
 
 
 // export function EdgeComponent(component: ComponentType<EdgeProps>) {
