@@ -20,6 +20,7 @@ export interface Elements {
 
 interface GraphProps extends HTMLAttributes<HTMLElement> {
   elements: Elements
+  position?: [number, number]
 }
 
 const defaultNodeType: Record<string, NodeJSX<any>> = {
@@ -30,7 +31,7 @@ const defaultEdgeType: Record<string, EdgeJSX<any>> = {
   default: StraightEdge
 }
 
-export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => {
+export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.Element => {
   const nodeTypes = defaultNodeType
   const edgeTypes = defaultEdgeType
   // TODO might need an ordered Map
@@ -38,7 +39,13 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
   const [edges] = useState<Map<string, IEdge>>(new Map())
   const [nodesRendered, setNodesRendered] = useState<boolean>(false)
   const [, setRender] = useState<number>(0)
-  const outerRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
+
+  // Note these are not persised state because we don't want to render for every update - maybe use refs?
+  let dragSourcePosition: [number, number] | undefined = undefined
+  let canvasPosition: [number, number] = position || [0, 0]
+  const scale = 1.0
+
 
   const forceRender = useCallback((): void => {
     setRender(r => r + 1)
@@ -70,7 +77,7 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
     if (!nodesRendered && nodeArray.length > 0 && (nodeArray[0][1].refObject.current != null)) {
       setNodesRendered(true)
     }
-  },  [nodesRendered, nodeArray])
+  }, [nodesRendered, nodeArray])
 
 
 
@@ -101,13 +108,20 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
 
   }
 
-  const onMouseDown: MouseEventHandler = e => { }
-  const onMouseMove: MouseEventHandler = e => { }
-  const onMouseUp: MouseEventHandler = e => { }
+  function transformString(): string { return `scale(${scale}) translate(${canvasPosition[0]}px,${canvasPosition[1]}px)` }
+
+  const onMouseDown: MouseEventHandler = e => { dragSourcePosition = [canvasPosition[0] - e.clientX, canvasPosition[1] - e.clientY]; return true }
+  const onMouseMove: MouseEventHandler = e => {
+    if (dragSourcePosition) {
+      canvasPosition[0] = dragSourcePosition[0] + e.clientX
+      canvasPosition[1] = dragSourcePosition[1] + e.clientY
+      let style = innerRef.current?.style
+      if (style)
+        style.setProperty("transform", transformString())
+    }
+  }
+  const onMouseUp: MouseEventHandler = e => { dragSourcePosition = undefined }
   const onMouseLeave: MouseEventHandler = e => { onMouseUp(e) }
-
-
-  const scale = 1.0
 
   function edgePositions(e: IEdge): [number, number][] {
     const fromNode = nodes.get(e.from.node)?.refObject.current
@@ -117,24 +131,25 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
     return ((fromPos && toPos) ? [fromPos, toPos] : [])
   }
 
-
   return (
     <>
-      <div className="outerDiv" ref={outerRef} style={{ transform: `scale(${scale})`, width: 600, height: 600}}
+      <div className="outerDiv" style={{ width: 600, height: 600, overflow: "clip", backgroundColor:"#e0e0e0" }}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}>
-        {nodeArray.map(([_, n]) =>
-          <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
-            {React.createElement(n.type, { data: n.data })}
-          </NodeWrapper>)
-        }
-        {/* Can't render Edges until the Nodes have been rendered once */}
-        {(nodesRendered) &&
-          <svg className="edgeSVG" width={600} height={600} >
-            {Array.from(edges).map(([_, e]) =>
-              <EdgeWrapper edgeClass={e.type} ref={e.refObject} key={e.id} path={edgePositions(e)} />
-            )}
-          </svg>
-        }
+        <div ref={innerRef} style={{ transform: transformString(), width: "100%", height: "100%"}}>
+          {nodeArray.map(([_, n]) =>
+            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
+              {React.createElement(n.type, { data: n.data })}
+            </NodeWrapper>)
+          }
+          {/* Can't render Edges until the Nodes have been rendered once */}
+          {(nodesRendered) &&
+            <svg className="edgeSVG" width="100%" height="100%" overflow="visible" >
+              {Array.from(edges).map(([_, e]) =>
+                <EdgeWrapper edgeClass={e.type} ref={e.refObject} key={e.id} path={edgePositions(e)} />
+              )}
+            </svg>
+          }
+        </div>
       </div>
     </>
   )

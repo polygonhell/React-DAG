@@ -53,13 +53,18 @@ export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: Nod
     console.log(`MouseDownHandle ${handleId} with Node ${id}`)
   }
 
+  const onStartDrag: DraggableEventHandler = (e, data) => {
+    e.stopPropagation()
+  }
+
   const onDrag: DraggableEventHandler = (e, data) => {
     currentPos = [data.x + originalPos[0], data.y + originalPos[1]]
     onMove(id, currentPos)
+    e.stopPropagation()
   }
 
 
-  return <Draggable scale={scale} onDrag={onDrag}>
+  return <Draggable scale={scale} onDrag={onDrag} onStart={onStartDrag} >
     <div style={{ position: "absolute", left: pos[0], top: pos[1], display: "inline-block" }}>
       <nodeContext.Provider value={{ registerHandle, onMouseDownHandle }}>
         {children}
