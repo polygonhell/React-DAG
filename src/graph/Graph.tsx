@@ -1,4 +1,4 @@
-import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, useRef, MouseEventHandler } from "react"
+import React, { forwardRef, HTMLAttributes, useEffect, useImperativeHandle, useState, useRef, MouseEventHandler, WheelEventHandler } from "react"
 import { useCallback } from "react"
 import { DefaultNode } from "./DefaultNode"
 import { NodeWrapper } from "./NodeWrapper"
@@ -44,7 +44,7 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
   // Note these are not persised state because we don't want to render for every update - maybe use refs?
   let dragSourcePosition: [number, number] | undefined = undefined
   let canvasPosition: [number, number] = position || [0, 0]
-  const scale = 1.0
+  let scale = 1.5
 
 
   const forceRender = useCallback((): void => {
@@ -108,13 +108,16 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
 
   }
 
-  function transformString(): string { return `scale(${scale}) translate(${canvasPosition[0]}px,${canvasPosition[1]}px)` }
+  function transformString(): string { return `translate(${canvasPosition[0]}px,${canvasPosition[1]}px) scale(${scale})` }
 
-  const onMouseDown: MouseEventHandler = e => { dragSourcePosition = [canvasPosition[0] - e.clientX, canvasPosition[1] - e.clientY]; return true }
+  const onMouseDown: MouseEventHandler = e => { 
+    // translate occurs after scale so I have to back it out
+    dragSourcePosition = [canvasPosition[0] - e.clientX, canvasPosition[1] - e.clientY] 
+  }
   const onMouseMove: MouseEventHandler = e => {
     if (dragSourcePosition) {
-      canvasPosition[0] = dragSourcePosition[0] + e.clientX
-      canvasPosition[1] = dragSourcePosition[1] + e.clientY
+      canvasPosition[0] = dragSourcePosition[0] + (e.clientX)
+      canvasPosition[1] = dragSourcePosition[1] + (e.clientY)
       let style = innerRef.current?.style
       if (style)
         style.setProperty("transform", transformString())
@@ -122,6 +125,26 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
   }
   const onMouseUp: MouseEventHandler = e => { dragSourcePosition = undefined }
   const onMouseLeave: MouseEventHandler = e => { onMouseUp(e) }
+
+  const onMouseWheel: WheelEventHandler = e => {
+    const sx = e.clientX
+    const sy = e.clientY
+    // position under mouse is pos/S - T
+    const pumX = (sx - canvasPosition[0])/scale 
+    const pumY = (sy - canvasPosition[1])/scale
+
+    scale = scale * ((e.deltaY < 0) ? 1.1 : 0.9)
+
+    // we now have to solve such that (sx - t')/s' = pumX 
+    // t' = sx - s' * pumX
+    canvasPosition[0] = sx - scale * pumX
+    canvasPosition[1] = sy - scale * pumY
+
+    let style = innerRef.current?.style
+      if (style)
+        style.setProperty("transform", transformString())
+  }
+
 
   function edgePositions(e: IEdge): [number, number][] {
     const fromNode = nodes.get(e.from.node)?.refObject.current
@@ -134,7 +157,9 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
   return (
     <>
       <div className="outerDiv" style={{ width: 600, height: 600 }}
-        onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}>
+           onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}
+           onWheel={onMouseWheel}
+      >
         <div ref={innerRef} className="innerDiv" style={{ transform: transformString() }}>
           {nodeArray.map(([_, n]) =>
             <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
