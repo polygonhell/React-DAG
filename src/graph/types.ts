@@ -45,6 +45,7 @@ export class IEdge<T = any> {
 
 export interface NodeRef {
   getHandlePos(id: string) : [number, number]
+  setScale(scale: number) : void
 }
 export class INode<T = any> {
   constructor(nodeTypes: Record<string, NodeJSX<any>>, n: GraphNode<T>) {

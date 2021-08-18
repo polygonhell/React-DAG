@@ -1,9 +1,10 @@
 import React, { forwardRef, useImperativeHandle, useState } from "react"
 import { EdgeJSX } from "./types"
 
-interface EdgeProps {
+interface EdgeProps<T = any> {
   path: [number, number][]
   edgeClass: EdgeJSX<any>
+  data?: T
 }
 
 
@@ -12,7 +13,7 @@ interface EdgeProps {
 
 // }
 
-export const EdgeWrapper = forwardRef(({ path, edgeClass }: EdgeProps, ref): JSX.Element => {
+export const EdgeWrapper = forwardRef(({ path, edgeClass, data }: EdgeProps, ref): JSX.Element => {
   const [currrentPath, setCurrentPath] = useState<[number, number][]>(path)
 
   useImperativeHandle(ref, () => ({
@@ -22,7 +23,7 @@ export const EdgeWrapper = forwardRef(({ path, edgeClass }: EdgeProps, ref): JSX
   }))
 
   return <>
-    {React.createElement(edgeClass, {path: currrentPath})}
+    {React.createElement(edgeClass, { path: currrentPath, data: data })}
   </>
 
   // return <path d={toPathString(currrentPath)} stroke="red" strokeWidth={3} fill="none" />

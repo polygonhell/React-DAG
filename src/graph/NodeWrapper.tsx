@@ -1,5 +1,6 @@
 import React, { forwardRef, ReactNode, useImperativeHandle } from "react"
-import Draggable, { DraggableEventHandler } from "react-draggable"
+import { useRef } from "react"
+import { DraggableCore, DraggableEventHandler } from "react-draggable"
 import { nodeContext } from "./contexts"
 
 
@@ -27,6 +28,9 @@ export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: Nod
   let handles: Handle[] = []
   const originalPos = pos
   let currentPos = originalPos
+  let currentScale = scale
+  let dragPos = [0,0]
+  const divRef = useRef<HTMLDivElement>(null)
 
   useImperativeHandle(ref, () => ({
     getState(): NodeWrapperState {
@@ -39,6 +43,7 @@ export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: Nod
       return [x, y]
       // return currentPos 
     },
+    setScale(scale: number) { currentScale = scale },
     getAlert() {
       alert("getAlert from NodeWrapper")
     }
@@ -54,22 +59,28 @@ export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: Nod
   }
 
   const onStartDrag: DraggableEventHandler = (e, data) => {
+    dragPos = [data.x/currentScale - currentPos[0], data.y/currentScale - currentPos[1]]
+    // console.log (`Drag Start ${}`)
+
     e.stopPropagation()
   }
 
   const onDrag: DraggableEventHandler = (e, data) => {
-    currentPos = [data.x + originalPos[0], data.y + originalPos[1]]
+    currentPos = [data.x/currentScale - dragPos[0] , data.y/currentScale - dragPos[1]]
     onMove(id, currentPos)
+    if (divRef.current) {
+      divRef.current.style.setProperty("left", `${currentPos[0]}px`)
+      divRef.current.style.setProperty("top", `${currentPos[1]}px`)
+    }
     e.stopPropagation()
   }
 
-
-  return <Draggable scale={scale} onDrag={onDrag} onStart={onStartDrag} >
-    <div style={{ position: "absolute", left: pos[0], top: pos[1], display: "inline-block" }}>
+  return <DraggableCore onDrag={onDrag} onStart={onStartDrag} >
+    <div ref={divRef} style={{ position: "absolute", left: currentPos[0], top: currentPos[1], display: "inline-block" }}>
       <nodeContext.Provider value={{ registerHandle, onMouseDownHandle }}>
         {children}
       </nodeContext.Provider>
     </div>
-  </Draggable>
+  </DraggableCore>
 })
 

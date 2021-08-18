@@ -132,6 +132,8 @@ export const Graph = forwardRef(({ elements, position }: GraphProps, ref): JSX.E
     const pumY = (sy - canvasPosition[1])/scale
 
     scale = scale * ((e.deltaY < 0) ? 1.1 : 0.9)
+    // Inform the nodes of the scale change since they deal with dragging
+    nodeArray.forEach(([_,n]) => { n.refObject.current?.setScale(scale)})
 
     // we now have to solve such that (sx - t')/s' = pumX 
     // t' = sx - s' * pumX
