@@ -33,9 +33,7 @@ export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: Nod
       return { id, pos: currentPos || pos }
     },
     getHandlePos(id: string): [number, number] {
-      const handle = handles.find(h => h.id === id)
-      const rect = handle?.ref.current?.getBoundingClientRect()
-      const current = handle?.ref.current
+      const current = handles.find(h => h.id === id)?.ref.current
       const x = (current?.offsetLeft || 0) + (current?.offsetWidth || 0) / 2 + currentPos[0]
       const y = (current?.offsetTop || 0) + (current?.offsetHeight || 0) / 2 + currentPos[1]
       return [x, y]

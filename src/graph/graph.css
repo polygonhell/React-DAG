@@ -1,7 +1,12 @@
 
-edgeSVG {
+.edgeSVG {
   position: absolute;
   left: 0;
   right: 0;
   pointer-events: none;
+}
+
+.outerDiv {
+  transform-origin: 0 0;
+  background-color: blue;
 }

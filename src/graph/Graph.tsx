@@ -57,6 +57,17 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
     elements.edges.forEach(e => addEdge(e))
   }, [elements, addEdge, addNode])
 
+  const nodeArray = Array.from(nodes)
+  // console.log(`rendered ${nodeArray.length} - ${nodeArray.length>0 && nodeArray[0][1].refObject.current != null}`)
+
+  useEffect(() => {
+    if (!nodesRendered && nodeArray.length > 0 && (nodeArray[0][1].refObject.current != null)) {
+      setNodesRendered(true)
+    }
+  },  [nodesRendered, nodeArray])
+
+
+
   useImperativeHandle(ref, () => ({
     addEdge,
     addNode,
@@ -100,31 +111,22 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
     return ((fromPos && toPos) ? [fromPos, toPos] : [])
   }
 
-  const nodeArray = Array.from(nodes)
-
-  useEffect(() => {
-    if (!nodesRendered && nodeArray.length > 0 && (nodeArray[0][1].refObject.current != null)) {
-      setNodesRendered(true)
-    }
-  },  [nodesRendered, nodeArray])
 
   return (
     <>
-      <div ref={outerRef} style={{ transformOrigin: "0 0", transform: `scale(${scale})`, width: 600, height: 600, backgroundColor: "blue" }}
+      <div className="outerDiv" ref={outerRef} style={{ transform: `scale(${scale})`, width: 600, height: 600}}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}>
         {nodeArray.map(([_, n]) =>
           <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
             {React.createElement(n.type, { data: n.data })}
           </NodeWrapper>)
         }
+        {/* Can't render Edges until the Nodes have been rendered once */}
         {(nodesRendered) &&
           <svg className="edgeSVG" width={600} height={600} >
             {Array.from(edges).map(([_, e]) =>
               <EdgeWrapper ref={e.refObject} key={e.id} path={edgePositions(e)} />
             )}
-            <text x={100} y={100} color="red">
-              Foo Bar Baz
-            </text>
           </svg>
         }
       </div>
