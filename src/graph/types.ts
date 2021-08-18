@@ -1,4 +1,4 @@
-import React, { ForwardRefExoticComponent, createRef } from "react"
+import React, { ForwardRefExoticComponent, createRef, ExoticComponent } from "react"
 
 export interface GraphNode<T = any> {
   id: string
@@ -24,10 +24,11 @@ export interface EdgeRef {
   updatePath(path: [number, number][]): void
 }
 export class IEdge<T = any> {
-  constructor(n: GraphEdge<T>) {
+  constructor(edgeTypes: Record<string, EdgeJSX<any>>, n: GraphEdge<T>) {
     this.id = n.id
     this.data = n.data
     this.typeName = n.type
+    this.type = edgeTypes[n.type || "default"]
     this.from = n.from
     this.to = n.to
   }
@@ -35,6 +36,7 @@ export class IEdge<T = any> {
   id: string
   data?: T
   typeName?: String
+  type: EdgeJSX<any>
   from: HandleRef
   to: HandleRef
   refObject: React.RefObject<EdgeRef> = createRef<EdgeRef>()
@@ -67,5 +69,11 @@ export interface NodeProperties<T = {}> {
   data?: T
 }
 
-export type NodeJSX<T> = ForwardRefExoticComponent<NodeProperties<T> & React.RefAttributes<unknown>>
+export interface EdgeProperties<T = {}> {
+  path: [number, number][]
+  data?: T
+}
+
+export type NodeJSX<T> = ExoticComponent<NodeProperties<T> & React.RefAttributes<unknown>>
+export type EdgeJSX<T> = ExoticComponent<EdgeProperties<T> & React.RefAttributes<unknown>>
 

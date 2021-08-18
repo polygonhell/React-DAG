@@ -3,9 +3,10 @@ import { useCallback } from "react"
 import { DefaultNode } from "./DefaultNode"
 import { NodeWrapper } from "./NodeWrapper"
 import "./types"
-import { GraphEdge, GraphNode, IEdge, INode, NodeJSX } from "./types"
+import { EdgeJSX, GraphEdge, GraphNode, IEdge, INode, NodeJSX } from "./types"
 import "./graph.css"
 import { EdgeWrapper } from "./EdgeWrapper"
+import { StraightEdge } from "./StraightEdge"
 
 
 
@@ -25,8 +26,13 @@ const defaultNodeType: Record<string, NodeJSX<any>> = {
   default: DefaultNode
 }
 
+const defaultEdgeType: Record<string, EdgeJSX<any>> = {
+  default: StraightEdge
+}
+
 export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => {
   const nodeTypes = defaultNodeType
+  const edgeTypes = defaultEdgeType
   // TODO might need an ordered Map
   const [nodes] = useState<Map<string, INode>>(new Map())
   const [edges] = useState<Map<string, IEdge>>(new Map())
@@ -44,7 +50,7 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
   }, [forceRender, nodes, nodeTypes])
 
   const addEdge = useCallback((edge: GraphEdge): void => {
-    edges.set(edge.id, new IEdge(edge))
+    edges.set(edge.id, new IEdge(edgeTypes, edge))
     const fromNode = nodes.get(edge.from.node)
     fromNode?.edges.push(edge.id)
     const toNode = nodes.get(edge.to.node)
@@ -125,7 +131,7 @@ export const Graph = forwardRef(({ elements }: GraphProps, ref): JSX.Element => 
         {(nodesRendered) &&
           <svg className="edgeSVG" width={600} height={600} >
             {Array.from(edges).map(([_, e]) =>
-              <EdgeWrapper ref={e.refObject} key={e.id} path={edgePositions(e)} />
+              <EdgeWrapper edgeClass={e.type} ref={e.refObject} key={e.id} path={edgePositions(e)} />
             )}
           </svg>
         }
