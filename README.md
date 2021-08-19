@@ -1,6 +1,16 @@
-# Getting Started with Create React App
+# React-DAG
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Yet another Directed Graph diagramming control that is intended to let you build interfaces similar to Unreal Bluprints on top of it.
+
+I built started, because none of the existing solutions did exactly what I wanted for the project I had in mind.
+
+This project does not follow react best practices, it's deigned to be able to efficently deal with graphs with a lot of nodes, so it goes to great lengths to avoid unnecessary re-renders.
+
+I am not a Frontend developer and my React expeience/understanding is at best limited, so use it at your own risk.
+
+## Status
+
+Work In progress
 
 ## Available Scripts
 
