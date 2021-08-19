@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useState } from "react"
+import React, { forwardRef, memo, useImperativeHandle, useState } from "react"
 import { EdgeJSX } from "./types"
 
 interface EdgeProps<T = any> {
@@ -13,7 +13,7 @@ interface EdgeProps<T = any> {
 
 // }
 
-export const EdgeWrapper = forwardRef(({ path, edgeClass, data }: EdgeProps, ref): JSX.Element => {
+export const EdgeWrapper = memo(forwardRef(({ path, edgeClass, data }: EdgeProps, ref): JSX.Element => {
   const [currrentPath, setCurrentPath] = useState<[number, number][]>(path)
 
   useImperativeHandle(ref, () => ({
@@ -27,4 +27,4 @@ export const EdgeWrapper = forwardRef(({ path, edgeClass, data }: EdgeProps, ref
   </>
 
   // return <path d={toPathString(currrentPath)} stroke="red" strokeWidth={3} fill="none" />
-})
+}))

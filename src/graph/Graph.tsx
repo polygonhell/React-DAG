@@ -31,7 +31,8 @@ const defaultEdgeType: Record<string, EdgeJSX<any>> = {
   default: StraightEdge
 }
 
-export const Graph = memo(forwardRef(({ elements, position }: GraphProps, ref): JSX.Element => {
+// Graph is memoized to prevent automatic rerender on parent changes - parent will not know about current state
+export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Element => {
 
   const nodeTypes = defaultNodeType
   const edgeTypes = defaultEdgeType
@@ -44,9 +45,8 @@ export const Graph = memo(forwardRef(({ elements, position }: GraphProps, ref): 
 
   // Note these are not persised state because we don't want to render for every update - maybe use refs?
   let dragSourcePosition: [number, number] | undefined = undefined
-  let canvasPosition: [number, number] = position || [0, 0]
+  let canvasPosition: [number, number] = [0, 0]
   let scale = 1.5
-
 
   function forceRender() { setRender(r => r + 1) }
 
@@ -72,15 +72,12 @@ export const Graph = memo(forwardRef(({ elements, position }: GraphProps, ref): 
   }, [elements, addEdge, addNode])
 
   const nodeArray = Array.from(nodes)
-  // console.log(`rendered ${nodeArray.length} - ${nodeArray.length>0 && nodeArray[0][1].refObject.current != null}`)
 
   useEffect(() => {
     if (!nodesRendered && nodeArray.length > 0 && (nodeArray[0][1].refObject.current != null)) {
       setNodesRendered(true)
     }
   }, [nodesRendered, nodeArray])
-
-
 
   useImperativeHandle(ref, () => ({
     addEdge,
@@ -89,9 +86,6 @@ export const Graph = memo(forwardRef(({ elements, position }: GraphProps, ref): 
       alert("getAlert from Child")
     }
   }))
-
-  // useEffect(() => forceRender(), [outerRef, forceRender])
-
 
 
   function onNodeMove(id: string, pos: [number, number]) {

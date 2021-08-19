@@ -1,4 +1,4 @@
-import React, { forwardRef, ReactNode, useImperativeHandle } from "react"
+import React, { forwardRef, memo, ReactNode, useImperativeHandle } from "react"
 import { useRef } from "react"
 import { DraggableCore, DraggableEventHandler } from "react-draggable"
 import { nodeContext } from "./contexts"
@@ -24,7 +24,7 @@ interface Handle {
   ref: React.RefObject<HTMLDivElement>
 }
 
-export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: NodeWrapperProperties, ref): JSX.Element => {
+export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove }: NodeWrapperProperties, ref): JSX.Element => {
   let handles: Handle[] = []
   const originalPos = pos
   let currentPos = originalPos
@@ -82,5 +82,5 @@ export const NodeWrapper = forwardRef(({ id, pos, scale, children, onMove }: Nod
       </nodeContext.Provider>
     </div>
   </DraggableCore>
-})
+}))
 
