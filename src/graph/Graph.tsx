@@ -48,17 +48,19 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   const innerRef = useRef<HTMLDivElement>(null)
   const newEdgeRef = useRef<EdgeRef>(null)
 
-  // Note these are not persised state because we don't want to render for every update - maybe use refs?
-  let canvasPosition: [number, number] = [0, 0]
-  let scale = 1.5
-  const graphId = newId()
+  // These don't force a render call, but will survive one
+  const canvasPosition = useRef<[number, number]>([0, 0])
+  const scale = useRef<number>(1.5)
+  const graphId = useRef<number>(newId())
 
+  // These are transient and won't survice a render call
   let dragSourcePosition: [number, number] | undefined = undefined
   let newEdgeSource: [number, number] | undefined = undefined
   let newEdgeSourceHandle: HandleRef = { node: "", handle: "" }
 
+  // Force a render to occur - node or edge added to list
   function forceRender() { setRender(r => r + 1) }
-  function newEdgeId(): string { return `__E${graphId}:${newId()}` }
+  function newEdgeId(): string { return `__E${graphId.current}:${newId()}` }
 
   const addNode = useCallback((node: GraphNode): void => {
     nodes.set(node.id, new INode(nodeTypes, node))
@@ -157,21 +159,23 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
     }
   }
 
-  function transformString(): string { return `translate(${canvasPosition[0]}px,${canvasPosition[1]}px) scale(${scale})` }
+  function transformString(): string {
+    return `translate(${canvasPosition.current[0]}px,${canvasPosition.current[1]}px) scale(${scale.current})`
+  }
 
   function clientToGraph(x: number, y: number): [number, number] {
-    return [(x - canvasPosition[0]) / scale, (y - canvasPosition[1]) / scale]
+    return [(x - canvasPosition.current[0]) / scale.current, (y - canvasPosition.current[1]) / scale.current]
   }
 
   const onMouseDown: MouseEventHandler = e => {
     // translate occurs after scale so I have to back it out
-    dragSourcePosition = [canvasPosition[0] - e.clientX, canvasPosition[1] - e.clientY]
+    dragSourcePosition = [canvasPosition.current[0] - e.clientX, canvasPosition.current[1] - e.clientY]
   }
 
   const onMouseMove: MouseEventHandler = e => {
     if (dragSourcePosition) {
-      canvasPosition[0] = dragSourcePosition[0] + (e.clientX)
-      canvasPosition[1] = dragSourcePosition[1] + (e.clientY)
+      canvasPosition.current[0] = dragSourcePosition[0] + (e.clientX)
+      canvasPosition.current[1] = dragSourcePosition[1] + (e.clientY)
       let style = innerRef.current?.style
       if (style)
         style.setProperty("transform", transformString())
@@ -190,17 +194,17 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
     const sx = e.clientX
     const sy = e.clientY
     // position under mouse is pos/S - T
-    const pumX = (sx - canvasPosition[0]) / scale
-    const pumY = (sy - canvasPosition[1]) / scale
+    const pumX = (sx - canvasPosition.current[0]) / scale.current
+    const pumY = (sy - canvasPosition.current[1]) / scale.current
 
-    scale = scale * ((e.deltaY < 0) ? 1.1 : 0.9)
+    scale.current = scale.current * ((e.deltaY < 0) ? 1.1 : 0.9)
     // Inform the nodes of the scale change since they deal with dragging
-    nodeArray.forEach(([_, n]) => { n.refObject.current?.setScale(scale) })
+    nodeArray.forEach(([_, n]) => { n.refObject.current?.setScale(scale.current) })
 
     // we now have to solve such that (sx - t')/s' = pumX 
     // t' = sx - s' * pumX
-    canvasPosition[0] = sx - scale * pumX
-    canvasPosition[1] = sy - scale * pumY
+    canvasPosition.current[0] = sx - scale.current * pumX
+    canvasPosition.current[1] = sy - scale.current * pumY
 
     let style = innerRef.current?.style
     if (style)
@@ -224,7 +228,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
       >
         <div ref={innerRef} className="innerDiv" style={{ transform: transformString() }}>
           {nodeArray.map(([_, n]) =>
-            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove} onHandleDown={onHandleDown} onHandleUp={onHandleUp}>
+            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale.current} pos={n.position} onMove={onNodeMove} onHandleDown={onHandleDown} onHandleUp={onHandleUp}>
               {React.createElement(n.type, { data: n.data })}
             </NodeWrapper>)
           }
@@ -236,7 +240,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
               )}
 
               {/* Edge used to display an edge being created */}
-              <EdgeWrapper ref={newEdgeRef} edgeClass={edgeTypes["default"]} key="__newEdge" path={[[0,0], [0,0]]} />
+              <EdgeWrapper ref={newEdgeRef} edgeClass={edgeTypes["default"]} key="__newEdge" path={[[0, 0], [0, 0]]} />
             </svg>
           }
         </div>

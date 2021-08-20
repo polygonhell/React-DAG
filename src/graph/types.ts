@@ -15,6 +15,11 @@ export interface GraphEdge<T = any> {
   to: HandleRef
 }
 
+export interface GraphRef {
+  addNode(node: GraphNode): void
+  addEdge(edge: GraphEdge): void
+}
+
 export interface HandleRef {
   node: string
   handle: string
