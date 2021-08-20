@@ -2,6 +2,7 @@ import React, { forwardRef, memo, ReactNode, useImperativeHandle } from "react"
 import { useRef } from "react"
 import { DraggableCore, DraggableEventHandler } from "react-draggable"
 import { nodeContext } from "./contexts"
+import { HandleInfo, Position } from "./types"
 
 
 
@@ -23,6 +24,7 @@ interface NodeWrapperState {
 
 interface Handle {
   id: string,
+  position?: Position,
   ref: React.RefObject<HTMLDivElement>
 }
 
@@ -38,11 +40,13 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove, 
     getState(): NodeWrapperState {
       return { id, pos: currentPos || pos }
     },
-    getHandlePos(id: string): [number, number] {
-      const current = handles.find(h => h.id === id)?.ref.current
+    getHandleInfo(id: string): HandleInfo {
+      const handle = handles.find(h => h.id === id)
+      const current = handle?.ref.current
+
       const x = (current?.offsetLeft || 0) + (current?.offsetWidth || 0) / 2 + currentPos[0]
-      const y = (current?.offsetTop || 0) + (current?.offsetHeight || 0) / 2 + currentPos[1]
-      return [x, y]
+      const y = (current?.offsetTop || 0) + (current?.offsetHeight || 0) / 2 + currentPos[1]      
+      return { pos: [x, y], position: handle?.position }
       // return currentPos 
     },
     setScale(scale: number) { currentScale = scale },
@@ -51,8 +55,8 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove, 
     }
   }))
 
-  function registerHandle(handleId: string, ref: React.RefObject<HTMLDivElement>) {
-    handles.push({ id: handleId, ref })
+  function registerHandle(handleId: string, ref: React.RefObject<HTMLDivElement>, position: Position) {
+    handles.push({ id: handleId, ref, position })
     // console.log(`+ Registering Handle ${handleId} with Node ${id} handles=${JSON.stringify(handles)}`)
   }
 

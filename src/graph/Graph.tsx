@@ -3,10 +3,10 @@ import { useCallback } from "react"
 import { DefaultNode } from "./DefaultNode"
 import { NodeWrapper } from "./NodeWrapper"
 import "./types"
-import { EdgeJSX, EdgeRef, GraphEdge, GraphNode, HandleRef, IEdge, INode, NodeJSX } from "./types"
+import { EdgeJSX, EdgeRef, GraphEdge, GraphNode, HandleRef, IEdge, INode, NodeJSX, Position } from "./types"
 import "./graph.css"
 import { EdgeWrapper } from "./EdgeWrapper"
-import { StraightEdge } from "./StraightEdge"
+import { BezierEdge } from "./BezierEdge"
 
 
 let idCount = 0
@@ -32,7 +32,7 @@ const defaultNodeType: Record<string, NodeJSX<any>> = {
 }
 
 const defaultEdgeType: Record<string, EdgeJSX<any>> = {
-  default: StraightEdge
+  default: BezierEdge
 }
 
 // Graph is memoized to prevent automatic rerender on parent changes - parent will not know about current state
@@ -102,12 +102,12 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
 
   function onHandleDown(node: string, handle: string) {
     // console.log(`Handle Down ${node}: ${handle}`)
-    const pos = nodes.get(node)?.refObject.current?.getHandlePos(handle)
-    if (pos) {
+    const info = nodes.get(node)?.refObject.current?.getHandleInfo(handle)
+    if (info) {
       newEdgeSourceHandle = { node, handle }
-      newEdgeSource = pos
+      newEdgeSource = info.pos
       if (newEdgeRef.current) {
-        newEdgeRef.current.updatePath([pos, pos])
+        newEdgeRef.current.updatePath([info.pos, info.pos], info.position)
       }
     }
   }
@@ -146,7 +146,10 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
       // Inform the Edges they need to be updated
       existing?.edges.forEach(e => {
         const edge = edges.get(e)
-        edge?.refObject.current?.updatePath(edgePositions(edge))
+        if (edge) {
+          const edgeInfo = edgePositions(edge)
+          edge.refObject.current?.updatePath(edgeInfo.path)
+        }        
       })
     }
 
@@ -212,12 +215,12 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   }
 
 
-  function edgePositions(e: IEdge): [number, number][] {
+  function edgePositions(e: IEdge): {path: [number, number][], sourcePosition?: Position, targetPosition?: Position} {
     const fromNode = nodes.get(e.from.node)?.refObject.current
-    const fromPos = fromNode?.getHandlePos(e.from.handle)
+    const fromInfo = fromNode?.getHandleInfo(e.from.handle)
     const toNode = nodes.get(e.to.node)?.refObject.current
-    const toPos = toNode?.getHandlePos(e.to.handle)
-    return ((fromPos && toPos) ? [fromPos, toPos] : [])
+    const toInfo = toNode?.getHandleInfo(e.to.handle)
+    return ((fromInfo && toInfo) ? {path: [fromInfo.pos, toInfo.pos], sourcePosition: fromInfo.position, targetPosition: toInfo.position }: {path: []})
   }
 
   return (
@@ -235,9 +238,10 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
           {/* Can't render Edges until the Nodes have been rendered once */}
           {(nodesRendered) &&
             <svg className="edgeSVG" width="100%" height="100%" overflow="visible" >
-              {Array.from(edges).map(([_, e]) =>
-                <EdgeWrapper edgeClass={e.type} ref={e.refObject} key={e.id} path={edgePositions(e)} />
-              )}
+              {Array.from(edges).map(([_, e]) => {
+                const info = edgePositions(e)
+                return <EdgeWrapper edgeClass={e.type} ref={e.refObject} key={e.id} path={info.path} sourcePosition={info.sourcePosition} targetPosition={info.targetPosition} />
+              })}
 
               {/* Edge used to display an edge being created */}
               <EdgeWrapper ref={newEdgeRef} edgeClass={edgeTypes["default"]} key="__newEdge" path={[[0, 0], [0, 0]]} />

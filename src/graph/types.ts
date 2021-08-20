@@ -26,7 +26,7 @@ export interface HandleRef {
 }
 
 export interface EdgeRef {
-  updatePath(path: [number, number][]): void
+  updatePath(path: [number, number][], sourcePosition?: Position, targetPosition?: Position): void
 }
 export class IEdge<T = any> {
   constructor(edgeTypes: Record<string, EdgeJSX<any>>, n: GraphEdge<T>) {
@@ -49,8 +49,12 @@ export class IEdge<T = any> {
 }
 
 
+export interface HandleInfo {
+  pos: [number, number]
+  position?: Position
+}
 export interface NodeRef {
-  getHandlePos(id: string) : [number, number]
+  getHandleInfo(id: string) : HandleInfo
   setScale(scale: number) : void
 }
 export class INode<T = any> {
@@ -79,8 +83,16 @@ export interface NodeProperties<T = {}> {
 export interface EdgeProperties<T = {}> {
   path: [number, number][]
   data?: T
+  sourcePosition?: Position
+  targetPosition?: Position
 }
 
 export type NodeJSX<T> = ExoticComponent<NodeProperties<T> & React.RefAttributes<unknown>>
 export type EdgeJSX<T> = ExoticComponent<EdgeProperties<T> & React.RefAttributes<unknown>>
 
+export enum Position {
+  Left = 0,
+  Right,
+  Top,
+  Bottom,
+}

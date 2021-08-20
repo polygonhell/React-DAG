@@ -1,5 +1,6 @@
 import { MouseEventHandler, ReactNode, useContext, useEffect, useRef } from "react"
 import { nodeContext } from "./contexts"
+import { Position } from "./types"
 
 
 
@@ -7,12 +8,13 @@ interface HandleProps {
   id: string
   children?: ReactNode
   style?: React.CSSProperties
+  position?: Position
 }
 
 
 const defaultContents = <div style={{width:3, height:3, borderStyle:"solid", borderColor:"grey", borderWidth:3, borderRadius:6 }}></div>
 
-export const Handle = ({id, style} : HandleProps) : JSX.Element => {
+export const Handle = ({id, style, position} : HandleProps) : JSX.Element => {
   const context = useContext(nodeContext)
   const contentsRef = useRef<HTMLDivElement>(null)
 
@@ -29,8 +31,8 @@ export const Handle = ({id, style} : HandleProps) : JSX.Element => {
   
 
   useEffect(() => {
-    context.registerHandle(id, contentsRef)
-  }, [id, context])
+    context.registerHandle(id, contentsRef, position)
+  }, [id, context, position])
 
   useEffect(() => {
     console.log(`??? = ${JSON.stringify(contentsRef.current?.getClientRects())}`)

@@ -1,10 +1,6 @@
 import { memo } from "react"
+import { EdgeProperties } from "./types"
 
-
-interface EdgeProps {
-  path: [number, number][]
-
-}
 
 function toPathString(path: [number, number][]): string {
   let out = `M ${path[0][0]} ${path[0][1]}`
@@ -14,6 +10,6 @@ function toPathString(path: [number, number][]): string {
   return out
 }
 
-export const StraightEdge = memo(({path} : EdgeProps) : JSX.Element => {
+export const StraightEdge = memo(({path} : EdgeProperties<{}>) : JSX.Element => {
   return <path d={toPathString(path)} stroke="red" strokeWidth={3} fill="none" />
 })
