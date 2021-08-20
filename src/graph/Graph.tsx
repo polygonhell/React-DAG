@@ -3,13 +3,17 @@ import { useCallback } from "react"
 import { DefaultNode } from "./DefaultNode"
 import { NodeWrapper } from "./NodeWrapper"
 import "./types"
-import { EdgeJSX, GraphEdge, GraphNode, IEdge, INode, NodeJSX } from "./types"
+import { EdgeJSX, EdgeRef, GraphEdge, GraphNode, HandleRef, IEdge, INode, NodeJSX } from "./types"
 import "./graph.css"
 import { EdgeWrapper } from "./EdgeWrapper"
 import { StraightEdge } from "./StraightEdge"
 
 
-
+let idCount = 0
+function newId(): number {
+  idCount++
+  return idCount
+}
 
 
 
@@ -47,6 +51,11 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   let dragSourcePosition: [number, number] | undefined = undefined
   let canvasPosition: [number, number] = [0, 0]
   let scale = 1.5
+  let newEdgeSource: [number, number] | undefined = undefined
+  let newEdgeSourceHandle: HandleRef = { node: "", handle: "" }
+  const newEdgeRef = useRef<EdgeRef>(null)
+  const graphId = newId()
+  function newEdgeId(): string { return `__E${graphId}:${newId()}` }
 
   function forceRender() { setRender(r => r + 1) }
 
@@ -88,6 +97,43 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   }))
 
 
+  function onHandleDown(node: string, handle: string) {
+    console.log(`Handle Down ${node}: ${handle}`)
+    const pos = nodes.get(node)?.refObject.current?.getHandlePos(handle)
+    if (pos) {
+      newEdgeSourceHandle = { node, handle }
+      newEdgeSource = pos
+      if (newEdgeRef.current) {
+        newEdgeRef.current.updatePath([pos, pos])
+      }
+    }
+  }
+
+  function onHandleUp(node: string, handle: string) {
+    console.log(`Handle Up ${node}: ${handle}`)
+    const destNode = nodes.get(node)
+    if (newEdgeSource && destNode) {
+      const edgeExists = destNode.edges.every(e => {
+        const edge = edges.get(e)
+        return (
+          edge?.to.handle === handle && edge?.from.node === newEdgeSourceHandle.node && edge?.from.handle === newEdgeSourceHandle.handle ||
+          edge?.from.handle === handle && edge?.to.node === newEdgeSourceHandle.node && edge?.to.handle === newEdgeSourceHandle.handle
+        )
+      })
+      if (!edgeExists) {
+        const newEdge: GraphEdge = {
+          id: newEdgeId(),
+          data: undefined,
+          from: newEdgeSourceHandle,
+          to: { node, handle }
+        }
+        addEdge(newEdge)
+        console.log(`Added new Edge ${newEdge.id}`)
+      }
+    }
+    cancelCreateEdge()
+  }
+
   function onNodeMove(id: string, pos: [number, number]) {
     // console.log(`Node ${id} moved to ${JSON.stringify(pos)}`)
     // Update the node position in the map - Note don't trigger render
@@ -103,12 +149,24 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
 
   }
 
+  function cancelCreateEdge(): void {
+    if (newEdgeRef.current && newEdgeSource) {
+      newEdgeRef.current.updatePath([newEdgeSource, newEdgeSource])
+      newEdgeSource = undefined
+    }
+  }
+
   function transformString(): string { return `translate(${canvasPosition[0]}px,${canvasPosition[1]}px) scale(${scale})` }
 
-  const onMouseDown: MouseEventHandler = e => { 
-    // translate occurs after scale so I have to back it out
-    dragSourcePosition = [canvasPosition[0] - e.clientX, canvasPosition[1] - e.clientY] 
+  function clientToGraph(x: number, y: number): [number, number] {
+    return [(x - canvasPosition[0]) / scale, (y - canvasPosition[1]) / scale]
   }
+
+  const onMouseDown: MouseEventHandler = e => {
+    // translate occurs after scale so I have to back it out
+    dragSourcePosition = [canvasPosition[0] - e.clientX, canvasPosition[1] - e.clientY]
+  }
+
   const onMouseMove: MouseEventHandler = e => {
     if (dragSourcePosition) {
       canvasPosition[0] = dragSourcePosition[0] + (e.clientX)
@@ -116,21 +174,27 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
       let style = innerRef.current?.style
       if (style)
         style.setProperty("transform", transformString())
+    } else if (newEdgeRef.current && newEdgeSource) {
+      const newEdgeDest: [number, number] = clientToGraph(e.clientX, e.clientY)
+      newEdgeRef.current.updatePath([newEdgeSource, newEdgeDest])
     }
   }
-  const onMouseUp: MouseEventHandler = e => { dragSourcePosition = undefined }
+  const onMouseUp: MouseEventHandler = e => {
+    dragSourcePosition = undefined
+    cancelCreateEdge()
+  }
   const onMouseLeave: MouseEventHandler = e => { onMouseUp(e) }
 
   const onMouseWheel: WheelEventHandler = e => {
     const sx = e.clientX
     const sy = e.clientY
     // position under mouse is pos/S - T
-    const pumX = (sx - canvasPosition[0])/scale 
-    const pumY = (sy - canvasPosition[1])/scale
+    const pumX = (sx - canvasPosition[0]) / scale
+    const pumY = (sy - canvasPosition[1]) / scale
 
     scale = scale * ((e.deltaY < 0) ? 1.1 : 0.9)
     // Inform the nodes of the scale change since they deal with dragging
-    nodeArray.forEach(([_,n]) => { n.refObject.current?.setScale(scale)})
+    nodeArray.forEach(([_, n]) => { n.refObject.current?.setScale(scale) })
 
     // we now have to solve such that (sx - t')/s' = pumX 
     // t' = sx - s' * pumX
@@ -138,8 +202,8 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
     canvasPosition[1] = sy - scale * pumY
 
     let style = innerRef.current?.style
-      if (style)
-        style.setProperty("transform", transformString())
+    if (style)
+      style.setProperty("transform", transformString())
   }
 
 
@@ -154,12 +218,12 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   return (
     <>
       <div className="outerDiv" style={{ width: 600, height: 600 }}
-           onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}
-           onWheel={onMouseWheel}
+        onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}
+        onWheel={onMouseWheel}
       >
         <div ref={innerRef} className="innerDiv" style={{ transform: transformString() }}>
           {nodeArray.map(([_, n]) =>
-            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove}>
+            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale} pos={n.position} onMove={onNodeMove} onHandleDown={onHandleDown} onHandleUp={onHandleUp}>
               {React.createElement(n.type, { data: n.data })}
             </NodeWrapper>)
           }
@@ -169,6 +233,9 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
               {Array.from(edges).map(([_, e]) =>
                 <EdgeWrapper edgeClass={e.type} ref={e.refObject} key={e.id} path={edgePositions(e)} />
               )}
+
+              {/* Edge used to display an edge being created */}
+              <EdgeWrapper ref={newEdgeRef} edgeClass={edgeTypes["default"]} key="__newEdge" path={[[0,0], [0,0]]} />
             </svg>
           }
         </div>

@@ -32,6 +32,7 @@ export class IEdge<T = any> {
     this.from = n.from
     this.to = n.to
   }
+
   
   id: string
   data?: T

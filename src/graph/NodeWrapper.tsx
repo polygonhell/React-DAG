@@ -1,6 +1,7 @@
 import React, { forwardRef, memo, ReactNode, useImperativeHandle } from "react"
 import { useRef } from "react"
 import { DraggableCore, DraggableEventHandler } from "react-draggable"
+import { Identifier } from "typescript"
 import { nodeContext } from "./contexts"
 
 
@@ -11,6 +12,8 @@ interface NodeWrapperProperties {
   pos: [number, number]
   children?: ReactNode
   onMove: (id: string, pos: [number, number]) => void
+  onHandleDown: (node: string, handle: string) => void
+  onHandleUp: (node: string, handle: string) => void
 }
 
 interface NodeWrapperState {
@@ -24,7 +27,7 @@ interface Handle {
   ref: React.RefObject<HTMLDivElement>
 }
 
-export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove }: NodeWrapperProperties, ref): JSX.Element => {
+export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove, onHandleDown, onHandleUp }: NodeWrapperProperties, ref): JSX.Element => {
   let handles: Handle[] = []
   const originalPos = pos
   let currentPos = originalPos
@@ -55,13 +58,15 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove }
   }
 
   function onMouseDownHandle(handleId: string) {
-    console.log(`MouseDownHandle ${handleId} with Node ${id}`)
+    onHandleDown(id, handleId)
+  }
+  function onMouseUpHandle(handleId: string) {
+    onHandleUp(id, handleId)
   }
 
   const onStartDrag: DraggableEventHandler = (e, data) => {
     dragPos = [data.x/currentScale - currentPos[0], data.y/currentScale - currentPos[1]]
     // console.log (`Drag Start ${}`)
-
     e.stopPropagation()
   }
 
@@ -77,7 +82,7 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove }
 
   return <DraggableCore onDrag={onDrag} onStart={onStartDrag} >
     <div ref={divRef} style={{ position: "absolute", left: currentPos[0], top: currentPos[1], display: "inline-block" }}>
-      <nodeContext.Provider value={{ registerHandle, onMouseDownHandle }}>
+      <nodeContext.Provider value={{ registerHandle, onMouseDownHandle, onMouseUpHandle }}>
         {children}
       </nodeContext.Provider>
     </div>

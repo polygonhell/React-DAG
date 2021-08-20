@@ -21,6 +21,11 @@ export const Handle = ({id, style} : HandleProps) : JSX.Element => {
     context.onMouseDownHandle(id)
   }
 
+  const onMouseUp : MouseEventHandler<HTMLDivElement> = e => {
+    e.stopPropagation();
+    context.onMouseUpHandle(id)
+  }
+
   
 
   useEffect(() => {
@@ -33,7 +38,7 @@ export const Handle = ({id, style} : HandleProps) : JSX.Element => {
   
   return <div style={{ display: "inline-block", position: style?.position, left: style?.left, top: style?.top, right:style?.right, bottom:style?.bottom }} 
               ref={contentsRef}
-              onMouseDown={onMouseDown}>
+              onMouseDown={onMouseDown} onMouseUp={onMouseUp}>
     {defaultContents}
   </div>
 }
