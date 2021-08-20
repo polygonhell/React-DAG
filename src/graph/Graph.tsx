@@ -46,18 +46,19 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   const [nodesRendered, setNodesRendered] = useState<boolean>(false)
   const [, setRender] = useState<number>(0)
   const innerRef = useRef<HTMLDivElement>(null)
+  const newEdgeRef = useRef<EdgeRef>(null)
 
   // Note these are not persised state because we don't want to render for every update - maybe use refs?
-  let dragSourcePosition: [number, number] | undefined = undefined
   let canvasPosition: [number, number] = [0, 0]
   let scale = 1.5
+  const graphId = newId()
+
+  let dragSourcePosition: [number, number] | undefined = undefined
   let newEdgeSource: [number, number] | undefined = undefined
   let newEdgeSourceHandle: HandleRef = { node: "", handle: "" }
-  const newEdgeRef = useRef<EdgeRef>(null)
-  const graphId = newId()
-  function newEdgeId(): string { return `__E${graphId}:${newId()}` }
 
   function forceRender() { setRender(r => r + 1) }
+  function newEdgeId(): string { return `__E${graphId}:${newId()}` }
 
   const addNode = useCallback((node: GraphNode): void => {
     nodes.set(node.id, new INode(nodeTypes, node))
@@ -98,7 +99,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
 
 
   function onHandleDown(node: string, handle: string) {
-    console.log(`Handle Down ${node}: ${handle}`)
+    // console.log(`Handle Down ${node}: ${handle}`)
     const pos = nodes.get(node)?.refObject.current?.getHandlePos(handle)
     if (pos) {
       newEdgeSourceHandle = { node, handle }
@@ -110,14 +111,14 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   }
 
   function onHandleUp(node: string, handle: string) {
-    console.log(`Handle Up ${node}: ${handle}`)
+    // console.log(`Handle Up ${node}: ${handle}`)
     const destNode = nodes.get(node)
     if (newEdgeSource && destNode) {
-      const edgeExists = destNode.edges.every(e => {
+      const edgeExists = destNode.edges.some(e => {
         const edge = edges.get(e)
         return (
-          edge?.to.handle === handle && edge?.from.node === newEdgeSourceHandle.node && edge?.from.handle === newEdgeSourceHandle.handle ||
-          edge?.from.handle === handle && edge?.to.node === newEdgeSourceHandle.node && edge?.to.handle === newEdgeSourceHandle.handle
+          (edge?.to.handle === handle && edge?.from.node === newEdgeSourceHandle.node && edge?.from.handle === newEdgeSourceHandle.handle) ||
+          (edge?.from.handle === handle && edge?.to.node === newEdgeSourceHandle.node && edge?.to.handle === newEdgeSourceHandle.handle)
         )
       })
       if (!edgeExists) {
