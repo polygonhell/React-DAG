@@ -1,4 +1,4 @@
-# React-DAG
+# React-DG
 
 Yet another Directed Graph diagramming control that is intended to let you build interfaces similar to Unreal Bluprints on top of it.
 
