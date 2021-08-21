@@ -56,6 +56,7 @@ export interface HandleInfo {
 export interface NodeRef {
   getHandleInfo(id: string) : HandleInfo
   setScale(scale: number) : void
+  setPosition(pos: [number, number]) : void
 }
 export class INode<T = any> {
   constructor(nodeTypes: Record<string, NodeJSX<any>>, n: GraphNode<T>) {

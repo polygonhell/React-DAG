@@ -17,6 +17,113 @@ function newId(): number {
 
 
 
+enum UndoActionEnum {
+  AddNode,
+  DeleteNode,
+  AddEdge,
+  DeleteEdge,
+  MoveNode,
+  PositionView,
+  ZoomView,
+  GroupedAction
+}
+class AddNode {
+  constructor(n: GraphNode) { this.node = n }
+  node: GraphNode   // Node Added
+  kind = UndoActionEnum.AddNode
+}
+class DeleteNode {
+  constructor(n: GraphNode) { this.node = n }
+  node: GraphNode   // Node Removed
+  kind = UndoActionEnum.DeleteNode
+}
+class AddEdge {
+  constructor(e: GraphEdge) { this.edge = e }
+  edge: GraphEdge   // Edge Added
+  kind = UndoActionEnum.AddEdge
+
+}
+class DeleteEdge {
+  constructor(e: GraphEdge) { this.edge = e }
+  edge: GraphEdge   // Edge Removed
+  kind = UndoActionEnum.DeleteEdge
+
+}
+
+class MoveNode {
+  constructor(id: string, from: [number, number], to: [number, number]) {
+    this.id = id
+    this.from = from
+    this.to = to
+  }
+  id: string
+  from: [number, number]
+  to: [number, number]
+  kind = UndoActionEnum.MoveNode
+
+}
+
+class PositionView {
+  constructor(from: [number, number], to: [number, number]) {
+    this.from = from
+    this.to = to
+  }
+  from: [number, number]
+  to: [number, number]
+  kind = UndoActionEnum.PositionView
+}
+
+class ZoomView {
+  constructor(from: number, to: number) {
+    this.from = from
+    this.to = to
+  }
+  from: number
+  to: number
+  kind = UndoActionEnum.ZoomView
+}
+
+class GroupedAction {
+  constructor(entries: UndoLogEntry[]) {
+    this.entries = entries
+  }
+  entries: UndoLogEntry[]
+  kind = UndoActionEnum.GroupedAction
+}
+
+type UndoLogEntry = AddNode | DeleteNode | MoveNode | AddEdge | DeleteEdge | PositionView | ZoomView | GroupedAction
+
+
+class UndoLog {
+  entries: UndoLogEntry[] = []
+  cursor: number = 0
+
+  do(e: UndoLogEntry) {
+    this.entries.push(e)
+    this.cursor = this.entries.length // lose REDO stack
+    console.log(`Stack = ${JSON.stringify(this)}`)
+  }
+  undo(): UndoLogEntry | undefined {
+    if (this.cursor === 0) {
+      return undefined
+    } else {
+      this.cursor--
+      return this.entries[this.cursor]
+    }
+  }
+  redo(): UndoLogEntry | undefined {
+    if (this.cursor === this.entries.length) {
+      return undefined
+    } else {
+      this.cursor++
+      return this.entries[this.cursor - 1]
+    }
+  }
+
+}
+
+
+
 export interface Elements {
   nodes: GraphNode[]
   edges: GraphEdge[]
@@ -52,11 +159,16 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   const canvasPosition = useRef<[number, number]>([0, 0])
   const scale = useRef<number>(1.5)
   const graphId = useRef<number>(newId())
+  const undoLog = useRef<UndoLog>(new UndoLog())
 
   // These are transient and won't survice a render call
   let dragSourcePosition: [number, number] | undefined = undefined
   let newEdgeSource: [number, number] | undefined = undefined
   let newEdgeSourceHandle: HandleRef = { node: "", handle: "" }
+
+
+
+
 
   // Force a render to occur - node or edge added to list
   function forceRender() { setRender(r => r + 1) }
@@ -85,11 +197,49 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
 
   const nodeArray = Array.from(nodes)
 
+  function doAction(a: UndoLogEntry) { undoLog.current.do(a) }
+  const undoAction = useCallback(() => {
+    const action = undoLog.current.undo()
+    console.log(`${typeof action} ${typeof MoveNode}`)
+    switch (action?.kind) {
+      case (UndoActionEnum.MoveNode):
+        console.log(`Undo Move Node: ${JSON.stringify(action)}`)
+        const move = action as MoveNode
+        const node = nodes.get(move.id)
+        node?.refObject.current?.setPosition(move.from)
+        break
+    }
+  }, [nodes])
+
+  const redoAction = useCallback(() => {
+    const action = undoLog.current.redo()
+    console.log(`${typeof action} ${typeof MoveNode}`)
+    switch (action?.kind) {
+      case (UndoActionEnum.MoveNode):
+        console.log(`Undo Move Node: ${JSON.stringify(action)}`)
+        const move = action as MoveNode
+        const node = nodes.get(move.id)
+        node?.refObject.current?.setPosition(move.to)
+        break
+    }
+  }, [nodes])
+
   useEffect(() => {
+    const onKeyPress = (e: KeyboardEvent): void => {
+      if (e.code === 'KeyZ' && e.ctrlKey && e.shiftKey) {
+        redoAction()
+      } else if (e.code === 'KeyZ' && e.ctrlKey && !e.shiftKey) {
+        undoAction()
+      }
+    }
+    window.addEventListener("keypress", onKeyPress, false)
+
     if (!nodesRendered && nodeArray.length > 0 && (nodeArray[0][1].refObject.current != null)) {
       setNodesRendered(true)
     }
-  }, [nodesRendered, nodeArray])
+
+    return () => { window.removeEventListener("keypress", onKeyPress, false) }
+  }, [nodesRendered, nodeArray, redoAction, undoAction])
 
   useImperativeHandle(ref, () => ({
     addEdge,
@@ -149,10 +299,18 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
         if (edge) {
           const edgeInfo = edgePositions(edge)
           edge.refObject.current?.updatePath(edgeInfo.path)
-        }        
+        }
       })
     }
 
+  }
+
+  function onEndNodeMove(id: string, from: [number, number], to: [number, number]) {
+    const existing = nodes.get(id)
+    if (existing) {
+      doAction(new MoveNode(id, from, to))
+      console.log("Node move ended")
+    }
   }
 
   function cancelCreateEdge(): void {
@@ -187,6 +345,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
       newEdgeRef.current.updatePath([newEdgeSource, newEdgeDest])
     }
   }
+
   const onMouseUp: MouseEventHandler = e => {
     dragSourcePosition = undefined
     cancelCreateEdge()
@@ -215,12 +374,13 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   }
 
 
-  function edgePositions(e: IEdge): {path: [number, number][], sourcePosition?: Position, targetPosition?: Position} {
+
+  function edgePositions(e: IEdge): { path: [number, number][], sourcePosition?: Position, targetPosition?: Position } {
     const fromNode = nodes.get(e.from.node)?.refObject.current
     const fromInfo = fromNode?.getHandleInfo(e.from.handle)
     const toNode = nodes.get(e.to.node)?.refObject.current
     const toInfo = toNode?.getHandleInfo(e.to.handle)
-    return ((fromInfo && toInfo) ? {path: [fromInfo.pos, toInfo.pos], sourcePosition: fromInfo.position, targetPosition: toInfo.position }: {path: []})
+    return ((fromInfo && toInfo) ? { path: [fromInfo.pos, toInfo.pos], sourcePosition: fromInfo.position, targetPosition: toInfo.position } : { path: [] })
   }
 
   return (
@@ -231,7 +391,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
       >
         <div ref={innerRef} className="innerDiv" style={{ transform: transformString() }}>
           {nodeArray.map(([_, n]) =>
-            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale.current} pos={n.position} onMove={onNodeMove} onHandleDown={onHandleDown} onHandleUp={onHandleUp}>
+            <NodeWrapper ref={n.refObject} key={n.id} id={n.id} scale={scale.current} pos={n.position} onMove={onNodeMove} onMoveEnd={onEndNodeMove} onHandleDown={onHandleDown} onHandleUp={onHandleUp}>
               {React.createElement(n.type, { data: n.data })}
             </NodeWrapper>)
           }

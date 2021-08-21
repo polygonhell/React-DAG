@@ -12,6 +12,7 @@ interface NodeWrapperProperties {
   pos: [number, number]
   children?: ReactNode
   onMove: (id: string, pos: [number, number]) => void
+  onMoveEnd: (id: string, from: [number, number], to: [number, number]) => void
   onHandleDown: (node: string, handle: string) => void
   onHandleUp: (node: string, handle: string) => void
 }
@@ -28,12 +29,13 @@ interface Handle {
   ref: React.RefObject<HTMLDivElement>
 }
 
-export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove, onHandleDown, onHandleUp }: NodeWrapperProperties, ref): JSX.Element => {
+export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMoveEnd, onMove, onHandleDown, onHandleUp }: NodeWrapperProperties, ref): JSX.Element => {
   let handles: Handle[] = []
   const originalPos = pos
   let currentPos = originalPos
   let currentScale = scale
   let dragPos = [0,0]
+  let prevPos = currentPos
   const divRef = useRef<HTMLDivElement>(null)
 
   useImperativeHandle(ref, () => ({
@@ -50,6 +52,7 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove, 
       // return currentPos 
     },
     setScale(scale: number) { currentScale = scale },
+    setPosition(pos: [number, number]) { changePosition(pos) },
     getAlert() {
       alert("getAlert from NodeWrapper")
     }
@@ -64,26 +67,38 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMove, 
     onHandleDown(id, handleId)
   }
   function onMouseUpHandle(handleId: string) {
+
     onHandleUp(id, handleId)
   }
 
   const onStartDrag: DraggableEventHandler = (e, data) => {
     dragPos = [data.x/currentScale - currentPos[0], data.y/currentScale - currentPos[1]]
+    prevPos = [data.x/currentScale - dragPos[0] , data.y/currentScale - dragPos[1]]
     // console.log (`Drag Start ${}`)
     e.stopPropagation()
   }
 
-  const onDrag: DraggableEventHandler = (e, data) => {
-    currentPos = [data.x/currentScale - dragPos[0] , data.y/currentScale - dragPos[1]]
+  function changePosition(pos: [number, number]) : void {
+    currentPos = pos
     onMove(id, currentPos)
     if (divRef.current) {
       divRef.current.style.setProperty("left", `${currentPos[0]}px`)
       divRef.current.style.setProperty("top", `${currentPos[1]}px`)
     }
+  }
+
+  const onDrag: DraggableEventHandler = (e, data) => {
+    changePosition([data.x/currentScale - dragPos[0] , data.y/currentScale - dragPos[1]])
     e.stopPropagation()
   }
 
-  return <DraggableCore onDrag={onDrag} onStart={onStartDrag} >
+  const onDragEnd: DraggableEventHandler = (e, data) => {
+    onMoveEnd(id, prevPos, currentPos)
+    e.stopPropagation()
+  }
+
+
+  return <DraggableCore onDrag={onDrag} onStop={onDragEnd} onStart={onStartDrag} >
     <div ref={divRef} style={{ position: "absolute", left: currentPos[0], top: currentPos[1], display: "inline-block" }}>
       <nodeContext.Provider value={{ registerHandle, onMouseDownHandle, onMouseUpHandle }}>
         {children}
