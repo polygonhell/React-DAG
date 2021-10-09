@@ -71,7 +71,7 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMoveEn
     onHandleUp(id, handleId)
   }
 
-  const onStartDrag: DraggableEventHandler = (e, data) => {
+  const onDragStart: DraggableEventHandler = (e, data) => {
     dragPos = [data.x/currentScale - currentPos[0], data.y/currentScale - currentPos[1]]
     prevPos = [data.x/currentScale - dragPos[0] , data.y/currentScale - dragPos[1]]
     // console.log (`Drag Start ${}`)
@@ -98,7 +98,7 @@ export const NodeWrapper = memo(forwardRef(({ id, pos, scale, children, onMoveEn
   }
 
 
-  return <DraggableCore onDrag={onDrag} onStop={onDragEnd} onStart={onStartDrag} >
+  return <DraggableCore onDrag={onDrag} onStop={onDragEnd} onStart={onDragStart} >
     <div ref={divRef} style={{ position: "absolute", left: currentPos[0], top: currentPos[1], display: "inline-block" }}>
       <nodeContext.Provider value={{ registerHandle, onMouseDownHandle, onMouseUpHandle }}>
         {children}

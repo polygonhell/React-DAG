@@ -173,12 +173,12 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   function forceRender() { setRender(r => r + 1) }
   function newEdgeId(): string { return `__E${graphId.current}:${newId()}` }
 
-  const addNode = useCallback((node: GraphNode): void => {
+  const addNodeI = useCallback((node: GraphNode): void => {
     nodes.set(node.id, new INode(nodeTypes, node))
     forceRender()
   }, [nodes, nodeTypes])
 
-  const addEdge = useCallback((edge: GraphEdge): void => {
+  const addEdgeI = useCallback((edge: GraphEdge): void => {
     edges.set(edge.id, new IEdge(edgeTypes, edge))
     const fromNode = nodes.get(edge.from.node)
     fromNode?.edges.push(edge.id)
@@ -188,11 +188,11 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   }, [edges, nodes, edgeTypes])
 
   useEffect(() => {
-    elements.nodes.forEach(n => addNode(n))
-    elements.edges.forEach(e => addEdge(e))
+    elements.nodes.forEach(n => addNodeI(n))
+    elements.edges.forEach(e => addEdgeI(e))
     // if we repopulate, the nodes have not been rendered
     setNodesRendered(false)
-  }, [elements, addEdge, addNode])
+  }, [elements, addEdgeI, addNodeI])
 
   const nodeArray = Array.from(nodes)
 
@@ -229,10 +229,10 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
       case (UndoActionEnum.AddEdge):
         console.log(`Redo Add Edge: ${JSON.stringify(action)}`)
         const add = action as AddEdge
-        addEdge(add.edge)
+        addEdgeI(add.edge)
         break
     }
-  }, [nodes, addEdge])
+  }, [nodes, addEdgeI])
 
   useEffect(() => {
     const onKeyPress = (e: KeyboardEvent): void => {
@@ -252,8 +252,8 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   }, [nodesRendered, nodeArray, redoAction, undoAction])
 
   useImperativeHandle(ref, () => ({
-    addEdge,
-    addNode,
+    addEdge: (e: GraphEdge) => { doAction(new AddEdge(e)); return addEdgeI(e) },
+    addNode: (n: GraphNode) => { doAction(new AddNode(n)); return addNodeI(n) },
     getAlert() {
       alert("getAlert from Child")
     }
@@ -290,7 +290,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
           from: newEdgeSourceHandle,
           to: { node, handle }
         }
-        addEdge(newEdge)
+        addEdgeI(newEdge)
         doAction(new AddEdge(newEdge))
         console.log(`Added new Edge ${newEdge.id}`)
       }
