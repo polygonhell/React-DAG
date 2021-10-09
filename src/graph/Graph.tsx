@@ -41,7 +41,6 @@ class AddEdge {
   constructor(e: GraphEdge) { this.edge = e }
   edge: GraphEdge   // Edge Added
   kind = UndoActionEnum.AddEdge
-
 }
 class DeleteEdge {
   constructor(e: GraphEdge) { this.edge = e }
@@ -208,21 +207,32 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
         const node = nodes.get(move.id)
         node?.refObject.current?.setPosition(move.from)
         break
+      case (UndoActionEnum.AddEdge):
+        console.log(`Undo Add Edge: ${JSON.stringify(action)}`)
+        const add = action as AddEdge
+        edges.delete(add.edge.id)
+        forceRender()
+        break
     }
-  }, [nodes])
+  }, [nodes, edges])
 
   const redoAction = useCallback(() => {
     const action = undoLog.current.redo()
     console.log(`${typeof action} ${typeof MoveNode}`)
     switch (action?.kind) {
       case (UndoActionEnum.MoveNode):
-        console.log(`Undo Move Node: ${JSON.stringify(action)}`)
+        console.log(`Redo Move Node: ${JSON.stringify(action)}`)
         const move = action as MoveNode
         const node = nodes.get(move.id)
         node?.refObject.current?.setPosition(move.to)
         break
+      case (UndoActionEnum.AddEdge):
+        console.log(`Redo Add Edge: ${JSON.stringify(action)}`)
+        const add = action as AddEdge
+        addEdge(add.edge)
+        break
     }
-  }, [nodes])
+  }, [nodes, addEdge])
 
   useEffect(() => {
     const onKeyPress = (e: KeyboardEvent): void => {
@@ -281,6 +291,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
           to: { node, handle }
         }
         addEdge(newEdge)
+        doAction(new AddEdge(newEdge))
         console.log(`Added new Edge ${newEdge.id}`)
       }
     }
