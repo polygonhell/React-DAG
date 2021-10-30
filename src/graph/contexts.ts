@@ -6,6 +6,7 @@ export interface NodeContext {
   registerHandle(id: string, ref: React.RefObject<HTMLDivElement>, position?: Position): void
   onMouseDownHandle(handleId: string): void
   onMouseUpHandle(handleId: string): void
+  selected: boolean
 }
 
 export const nodeContext = createContext<NodeContext>(undefined!)

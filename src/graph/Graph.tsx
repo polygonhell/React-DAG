@@ -98,8 +98,9 @@ class UndoLog {
   cursor: number = 0
 
   do(e: UndoLogEntry) {
+    this.entries.length = this.cursor // lose REDO stack
     this.entries.push(e)
-    this.cursor = this.entries.length // lose REDO stack
+    this.cursor = this.entries.length 
     console.log(`Stack = ${JSON.stringify(this)}`)
   }
   undo(): UndoLogEntry | undefined {
@@ -339,7 +340,7 @@ export const Graph = memo(forwardRef(({ elements, style }: GraphProps, ref): JSX
 
   function onEndNodeMove(id: string, from: [number, number], to: [number, number]) {
     const existing = nodes.get(id)
-    if (existing) {
+    if (existing && (from[0] !== to[0] || from[1]!==to[1])) {
       doAction(new MoveNode(id, from, to))
       console.log("Node move ended")
     }
