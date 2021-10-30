@@ -142,7 +142,7 @@ const defaultEdgeType: Record<string, EdgeJSX<any>> = {
 }
 
 // Graph is memoized to prevent automatic rerender on parent changes - parent will not know about current state
-export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Element => {
+export const Graph = memo(forwardRef(({ elements, style }: GraphProps, ref): JSX.Element => {
 
   const nodeTypes = defaultNodeType
   const edgeTypes = defaultEdgeType
@@ -152,6 +152,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   const [nodesRendered, setNodesRendered] = useState<boolean>(false)
   const [, setRender] = useState<number>(0)
   const innerRef = useRef<HTMLDivElement>(null)
+  const outerRef = useRef<HTMLDivElement>(null)
   const newEdgeRef = useRef<EdgeRef>(null)
 
   // These don't force a render call, but will survive one
@@ -174,8 +175,10 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   function newEdgeId(): string { return `__E${graphId.current}:${newId()}` }
 
   const addNodeI = useCallback((node: GraphNode): void => {
-    nodes.set(node.id, new INode(nodeTypes, node))
-    forceRender()
+    if (nodes.get(node.id) === undefined) { // Can't add nodes that exist
+      nodes.set(node.id, new INode(nodeTypes, node))
+      forceRender()
+    }
   }, [nodes, nodeTypes])
 
   const addEdgeI = useCallback((edge: GraphEdge): void => {
@@ -209,11 +212,17 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
         break
       case (UndoActionEnum.AddEdge):
         console.log(`Undo Add Edge: ${JSON.stringify(action)}`)
-        const add = action as AddEdge
-        edges.delete(add.edge.id)
+        const addE = action as AddEdge
+        edges.delete(addE.edge.id)
         forceRender()
         break
-    }
+      case (UndoActionEnum.AddNode):
+        console.log(`Undo Add Node: ${JSON.stringify(action)}`)
+        const addN = action as AddNode
+        nodes.delete(addN.node.id)
+        forceRender()
+        break
+      }
   }, [nodes, edges])
 
   const redoAction = useCallback(() => {
@@ -228,11 +237,16 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
         break
       case (UndoActionEnum.AddEdge):
         console.log(`Redo Add Edge: ${JSON.stringify(action)}`)
-        const add = action as AddEdge
-        addEdgeI(add.edge)
+        const addE = action as AddEdge
+        addEdgeI(addE.edge)
+        break
+      case (UndoActionEnum.AddNode):
+        console.log(`Redo Add Node: ${JSON.stringify(action)}`)
+        const addN = action as AddNode
+        addNodeI(addN.node)
         break
     }
-  }, [nodes, addEdgeI])
+  }, [nodes, addEdgeI, addNodeI])
 
   useEffect(() => {
     const onKeyPress = (e: KeyboardEvent): void => {
@@ -254,6 +268,13 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
   useImperativeHandle(ref, () => ({
     addEdge: (e: GraphEdge) => { doAction(new AddEdge(e)); return addEdgeI(e) },
     addNode: (n: GraphNode) => { doAction(new AddNode(n)); return addNodeI(n) },
+    getExtents: () => { 
+      const rect = outerRef.current?.getBoundingClientRect()
+      if (rect === undefined) { return { top: 0, left: 0, right: 0, bottom: 0 } }
+      const [left, top] = clientToGraph(rect.left,rect.top)
+      const [right, bottom] = clientToGraph(rect.right,rect.bottom)
+      return { top, left, bottom, right } 
+    },
     getAlert() {
       alert("getAlert from Child")
     }
@@ -339,6 +360,10 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
     return [(x - canvasPosition.current[0]) / scale.current, (y - canvasPosition.current[1]) / scale.current]
   }
 
+  function graphToClient(x: number, y: number): [number, number] {
+    return [ x * scale.current + canvasPosition.current[0], y * scale.current + canvasPosition.current[1] ]
+  }
+
   const onMouseDown: MouseEventHandler = e => {
     // translate occurs after scale so I have to back it out
     dragSourcePosition = [canvasPosition.current[0] - e.clientX, canvasPosition.current[1] - e.clientY]
@@ -396,7 +421,7 @@ export const Graph = memo(forwardRef(({ elements }: GraphProps, ref): JSX.Elemen
 
   return (
     <>
-      <div className="outerDiv" style={{ width: 600, height: 600 }}
+      <div ref={outerRef} className="outerDiv" style={style}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}
         onWheel={onMouseWheel}
       >

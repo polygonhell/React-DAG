@@ -1,7 +1,11 @@
+import { Button } from '@material-ui/core'
 import { useRef } from 'react';
 import './App.css';
 import { Graph, Elements } from './graph/Graph';
+import { GraphRef } from './graph/types'
 
+
+let nodeID = 7
 
 
 const initialElements: Elements = {
@@ -53,10 +57,21 @@ const initialElements: Elements = {
 }
 
 function App() {
-  const graphRef = useRef()
+  const graphRef = useRef<GraphRef>()
+  const newNode : React.MouseEventHandler<HTMLButtonElement> = (e) =>  {
+    if (graphRef.current) {
+      const gr = graphRef.current
+      const ext = gr.getExtents()
+      const newID = "_N_" + nodeID++
+      gr.addNode({id: newID, position:[(ext.left+ext.right)/2, (ext.top + ext.bottom)/2], data:{label: "New Node"}})
+    }
+  }
   return (
-    <div className="App">
-      <Graph elements={initialElements} ref={graphRef}/>
+    <div className="App" style={{display:"flex", flexDirection:"column"}}>
+      <Graph elements={initialElements} style={{width: 1024, height: 600}} ref={graphRef}/>
+      <div className="App" style={{display:"flex", flexDirection:"row"}}>
+        <Button onClick={newNode} >NewNode</Button>
+      </div>
     </div>
   );
 }

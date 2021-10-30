@@ -15,9 +15,16 @@ export interface GraphEdge<T = any> {
   to: HandleRef
 }
 
+export interface GraphExtents {
+  top: number
+  left: number
+  bottom: number
+  right: number
+}
 export interface GraphRef {
   addNode(node: GraphNode): void
   addEdge(edge: GraphEdge): void
+  getExtents(): GraphExtents
 }
 
 export interface HandleRef {
